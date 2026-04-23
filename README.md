@@ -1,69 +1,107 @@
-# OutSystems Google Cloud Storage Connector
+# Google Cloud Storage (GCS) Connector for ODC
 
 [![Platform](https://img.shields.io/badge/Platform-OutSystems_ODC-red.svg)](https://www.outsystems.com/odc/)
 [![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A high-performance, enterprise-grade connector for **Google Cloud Storage (GCS)**, specifically built for **OutSystems Developer Cloud (ODC)**. This library wraps the official Google Cloud .NET SDK, providing a secure and native experience for managing cloud resources.
+An enterprise-grade External Logic component for **OutSystems Developer Cloud (ODC)**. This connector provides a high-performance, stateless wrapper around the official [Google Cloud Storage .NET SDK](https://cloud.google.com/dotnet/docs/reference/Google.Cloud.Storage.V1/latest), enabling seamless integration with Google Cloud Storage while adhering to ODC architectural best practices.
 
-## 🚀 Features
+---
 
-- **Object Management:** Upload, Download, List, Delete, and Metadata-based existence checks.
-- **Bucket Management:** Programmatic creation, deletion, and listing of containers.
-- **Signed URLs:** Full support for V4 Signed URLs (GET/PUT) for secure direct-to-browser access.
-- **Encapsulated Data Model:** Structured authentication and file objects for cleaner Service Studio logic.
-- **ODC Optimized:** Fully compliant with the ODC External Logic SDK, including embedded icons and camelCase naming.
+## 🏛 Architectural Overview
 
-## 📋 Prerequisites
+The connector is designed as a **stateless adapter** that bridges the OutSystems runtime with Google's Cloud API. It prioritizes memory efficiency and security through specific design patterns.
 
-1.  An active **Google Cloud Project**.
-2.  A **Service Account** with necessary roles:
-    -   `Storage Object Admin` (for file operations)
-    -   `Storage Admin` (for bucket management)
-    -   `Service Account Token Creator` (required for **Signed URLs**)
-3.  A **Service Account JSON Key** (from which you will extract credentials).
+### Component Design
+The library follows the **Bridge Pattern**, decoupling the OutSystems interface from the underlying SDK implementation. This ensures that changes to the Google SDK do not break the OutSystems application logic.
 
-## 🔐 Configuration
+```mermaid
+graph TD
+    A[OutSystems Service Studio] -->|Server Action| B(IGoogleCloudStorage Interface)
+    B --> C{External Logic SDK}
+    C --> D[GoogleCloudStorage Adapter]
+    D --> E[Google.Cloud.Storage.V1 SDK]
+    E --> F[Google Cloud Global Infrastructure]
+```
 
-Instead of storing JSON files, this connector uses a structured `Authentication` object. Map the following values from your Service Account JSON to your ODC App Settings:
+### Security Architecture
+- **Identity & Access Management (IAM):** Authenticates via Service Account credentials. The connector supports the **Principle of Least Privilege**; it only requires the `Storage Object Admin` and `Service Account Token Creator` roles for core operations.
+- **Zero-Persistence:** Credentials are never stored or cached within the extension. They are passed as encrypted ODC App Settings at runtime.
+- **V4 Signing:** Implements cryptographically secure URL signing to allow direct client-side access to private objects, eliminating the need to proxy binary data through the ODC server.
 
--   **ProjectId:** `project_id`
--   **ClientEmail:** `client_email`
--   **PrivateKey:** `private_key` (including `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`)
+---
 
-## 🛠️ Actions
+## ✨ Enterprise Features
 
-| Action | Description |
-| :--- | :--- |
-| `Object_Upload` | Uploads a `File` (Binary + ContentType) to a bucket. |
-| `Object_Download` | Retrieves a `File` structure from a specific path. |
-| `Object_List` | Returns a list of `Object` metadata, supports prefix filtering. |
-| `Object_Exists` | Performs a lightweight check to verify if a file exists. |
-| `Object_Delete` | Permanently removes an object. |
-| `Object_GetSignedUrl` | Generates a time-limited secure URL for direct access. |
-| `Bucket_List` | Lists all buckets in the project. |
-| `Bucket_Create` | Creates a new container in a specified location (e.g., `US`, `EU`). |
-| `Bucket_Delete` | Deletes an empty bucket. |
+- **Full CRUD Lifecycle:** Comprehensive management of both Objects and Buckets.
+- **Encapsulated Data Models:** Uses strongly-typed DTOs (`File`, `Bucket`, `Object`) to minimize complexity in OutSystems logic.
+- **Prefix-Based Hierarchy:** Optimized listing actions that support virtual directory navigation using delimiters.
+- **Native Developer Experience:**
+    - **Branded Tooling:** Custom icons for actions to improve visual discoverability in Service Studio.
+    - **CamelCase Normalization:** Parameter naming aligned with OutSystems' modern development standards.
 
-## 🏗️ Technical Setup
+---
 
-### Local Build
-1.  Ensure you have the [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) installed.
-2.  Build and Publish:
-    ```bash
-    dotnet publish GoogleCloudStorage.csproj -c Release -f net8.0 --no-self-contained
-    ```
+## 🔐 Configuration & IAM
 
-### ODC Deployment
-The deployment package must be a flat ZIP containing only the essential assemblies.
-1.  Navigate to the `publish` folder.
-2.  Remove `OutSystems.ExternalLibraries.SDK.dll`.
-3.  Zip all remaining files and upload to the ODC Portal under **External Logic**.
+To integrate this connector, extract the following fields from your **Service Account JSON key** and store them as **App Settings** in the ODC Portal:
 
-## ⚖️ Limitations
-- **Memory:** Binary data is handled in-memory (`byte[]`). Avoid direct server-side handling of files exceeding 200MB. Use **Signed URLs** for large file transfers.
-- **Timeouts:** Long-running uploads are subject to ODC server action timeouts.
-- **Uniqueness:** Bucket names must be globally unique across Google Cloud.
+| Setting | JSON Key | Architectural Purpose |
+| :--- | :--- | :--- |
+| **ProjectId** | `project_id` | Scopes billing and resource lookup. |
+| **ClientEmail** | `client_email` | Service Account identity for IAM validation. |
+| **PrivateKey** | `private_key` | RSA Private Key for request signing. |
+
+### Required IAM Roles
+- `roles/storage.objectAdmin`: Standard object manipulation.
+- `roles/iam.serviceAccountTokenCreator`: Required specifically for the **GetSignedUrl** action.
+
+---
+
+## 🛠️ Action Reference
+
+### Object Operations
+- **`Object_Upload`**: Persists an object to GCS using a structured `File` input.
+- **`Object_Download`**: Retrieves object content and system metadata as an encapsulated `File`.
+- **`Object_List`**: Returns a collection of `Object` metadata. Efficiently handles large bucket listings via enumerable projection.
+- **`Object_Exists`**: Lightweight metadata-only probe to verify path existence without data transfer costs.
+- **`Object_Delete`**: Synchronous removal of cloud objects.
+- **`Object_GetSignedUrl`**: Generates a temporary, secure GET link (V4) for direct asset delivery.
+
+### Bucket Operations
+- **`Bucket_List`**: Audits container availability within the scoped project.
+- **`Bucket_Create`**: Provisions globally unique storage containers with location-specific residency.
+- **`Bucket_Delete`**: Decommissioning of empty storage containers.
+
+---
+
+## 💡 Best Practices
+
+1. **Performance Tuning:** For files exceeding 100MB, avoid `Object_Download`. Use `Object_GetSignedUrl` to offload the network egress and memory pressure directly to the client's browser.
+2. **Security:** Mark the `PrivateKey` as **Secret** in ODC to ensure it is encrypted at rest and masked in logs.
+3. **Hierarchy Management:** Leverage the `Prefix` parameter in listings to implement efficient "folder-based" application logic.
+
+---
+
+## 🏗️ Build & Deployment
+
+### Environment Setup
+- **SDK:** .NET 8.0
+- **Build Tool:** dotnet CLI
+
+### Deployment Pipeline
+1. **Compile & Publish:**
+   ```bash
+   dotnet publish GoogleCloudStorage.csproj -c Release -f net8.0 --no-self-contained
+   ```
+2. **Package Optimization:**
+   Navigate to the `publish` directory, remove `OutSystems.ExternalLibraries.SDK.dll`, and generate a flat ZIP archive for ODC Portal upload.
+
+---
 
 ## 📄 License
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Distributed under the **MIT License**. See `LICENSE` for more information.
+
+---
+*Maintained by Paulo Ricardo Oliveira Monteiro.*

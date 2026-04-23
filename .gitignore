@@ -9,3 +9,5 @@ publish_odc/
 deploy_odc/
 clean_zip/
 __MACOSX/
+._*
+.*
