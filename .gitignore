@@ -1,0 +1,11 @@
+bin/
+obj/
+*.zip
+*.user
+.DS_Store
+.VSCode/
+.vs/
+publish_odc/
+deploy_odc/
+clean_zip/
+__MACOSX/
