@@ -11,15 +11,6 @@ The connector is designed as a **stateless adapter**, prioritizing memory effici
 ### Stateless Adapter Pattern
 The `StorageClient` is initialized per request, ensuring no cross-request state contamination and optimal memory management. This is critical for ODC high-concurrency environments.
 
-```mermaid
-graph TD
-    A[OutSystems Service Studio] -->|Server Action| B(IGoogleCloudStorage Interface)
-    B --> C{External Logic SDK}
-    C --> D[GoogleCloudStorage Adapter]
-    D --> E[Google.Cloud.Storage.V1 SDK]
-    E --> F[Google Cloud Global Infrastructure]
-```
-
 ### Security Strategy: Zero-Persistence
 Credentials are never stored or cached within the extension. They are passed as encrypted App Settings at runtime via a structured `Authentication` model.
 
