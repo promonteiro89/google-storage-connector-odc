@@ -17,7 +17,6 @@ A high-performance .NET 8.0 External Logic component for OutSystems Developer Cl
   - [Object Operations](#object-operations)
   - [Bucket Operations](#bucket-operations)
 - [Data Structures](#data-structures)
-- [Configuration](#configuration)
 - [Project Structure](#project-structure)
 - [Build and Deployment](#build-and-deployment)
 - [Best Practices](#best-practices)
@@ -101,17 +100,90 @@ Persists a file to a specific GCS bucket.
 #### `Object_Download`
 Retrieves a file and its metadata from GCS.
 
+**Arguments:**
+| Argument | Type | Description |
+|----------|------|-------------|
+| `authentication` | `Authentication` | GCP credentials |
+| `bucketName` | `Text` | Source bucket |
+| `objectName` | `Text` | Full path/filename in the bucket |
+
 **Outputs:**
 | Output | Type | Description |
 |--------|------|-------------|
 | `file` | `File` | Structure containing Binary Content and system ContentType |
 
+#### `Object_List`
+Lists objects in a bucket with an optional prefix filter.
+
+**Arguments:**
+| Argument | Type | Description |
+|----------|------|-------------|
+| `authentication` | `Authentication` | GCP credentials |
+| `bucketName` | `Text` | Source bucket |
+| `prefix` | `Text` | Prefix filter for hierarchical navigation |
+
+**Outputs:**
+| Output | Type | Description |
+|--------|------|-------------|
+| `objects` | `List of Object` | Collection of GCS object metadata |
+
+#### `Object_Exists`
+Checks whether an object exists in a bucket via a lightweight metadata probe.
+
+**Arguments:**
+| Argument | Type | Description |
+|----------|------|-------------|
+| `authentication` | `Authentication` | GCP credentials |
+| `bucketName` | `Text` | Source bucket |
+| `objectName` | `Text` | Full path/filename to check |
+
+**Outputs:**
+| Output | Type | Description |
+|--------|------|-------------|
+| `exists` | `Boolean` | True if the object exists |
+
+#### `Object_Delete`
+Permanently removes an object from a bucket.
+
+**Arguments:**
+| Argument | Type | Description |
+|----------|------|-------------|
+| `authentication` | `Authentication` | GCP credentials |
+| `bucketName` | `Text` | Source bucket |
+| `objectName` | `Text` | Full path/filename to delete |
+
 #### `Object_GetSignedUrl`
 Generates a time-limited V4 GET URL for secure, direct-to-browser file access.
+
+**Arguments:**
+| Argument | Type | Description |
+|----------|------|-------------|
+| `authentication` | `Authentication` | GCP credentials |
+| `bucketName` | `Text` | Source bucket |
+| `objectName` | `Text` | Full path/filename |
+| `expirationMinutes` | `Integer` | Link validity duration |
+
+**Outputs:**
+| Output | Type | Description |
+|--------|------|-------------|
+| `url` | `Text` | Temporary secure URL |
 
 ---
 
 ### Bucket Operations
+
+#### `Bucket_List`
+Lists all buckets in the specified project.
+
+**Arguments:**
+| Argument | Type | Description |
+|----------|------|-------------|
+| `authentication` | `Authentication` | GCP credentials |
+
+**Outputs:**
+| Output | Type | Description |
+|--------|------|-------------|
+| `buckets` | `List of Bucket` | Collection of project bucket metadata |
 
 #### `Bucket_Create`
 Provisions a new globally unique storage container.
@@ -123,9 +195,24 @@ Provisions a new globally unique storage container.
 | `bucketName` | `Text` | Globally unique name |
 | `location` | `Text` | Geographic region (e.g., `US`, `EU`, `asia-east1`) |
 
+#### `Bucket_Delete`
+Decommissioning of an empty storage container.
+
+**Arguments:**
+| Argument | Type | Description |
+|----------|------|-------------|
+| `authentication` | `Authentication` | GCP credentials |
+| `bucketName` | `Text` | Name of the bucket to delete |
+
 ---
 
 ## Data Structures
+
+### `Authentication`
+Encapsulates Google Cloud Service Account credentials.
+- `ProjectId`: Text
+- `ClientEmail`: Text
+- `PrivateKey`: Text
 
 ### `File`
 Used for binary data exchange.
